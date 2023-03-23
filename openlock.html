@@ -12,6 +12,7 @@
 
       <br>
 
+      <p>1</p>
       <br>
 
       <br>
@@ -62,7 +63,8 @@
       var params = {'function' : 'openBluetoothAdapter'}   
       window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
             //alert(response)
-            if(response.resultCode = 0){
+            let responseObj = JSON.parse(response)
+            if(responseObj.resultCode = 0){
               var params = {'function' : 'getBluetoothAdapterState'}
               window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
                   alert(response)
