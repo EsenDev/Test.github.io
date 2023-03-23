@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html>
-
+  <head>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+  </head>
   <body>
 
 
       <button onclick="javascript:location.reload();">
-      刷新
+        刷新页面
       </button>
 
       <br>
 
       <br>
 
-      <p>1</p>
+      <button onclick="destroy()">
+      关闭蓝牙
+      </button>
+
       <br>
 
       <br>
@@ -21,30 +26,61 @@
       <button onclick="openlock()">
       开锁
       </button>
+
   </body>
 
   </html>
 
   <script>
 
+    let str = window.location.search.substr(1)
+    
+    let arrList = str.split('&')
+    let sMap = new Map();
+    arrList.forEach(function (item) {
+        let arr = item.split('=')
+        sMap.set(arr[0],decodeURIComponent(arr[1]))
+    })
+   let sourceCMEI = sMap.get("deviceId")
+
+   let openByServer = sMap.get("openByServer")
+
+   console.log(sourceCMEI +"  "+ openByServer)
+
+   //alert(openByServer)
+
+   let currentConnectDeviceId
+
+   let serviceId
+
+   let writeCharacteristic
+
+   let notifyCharacteristic
+
+   let isConnected
+
+   let isDestroy
+   
+   let isScanning
+
    function setupWebViewJavascriptBridge(callback) {
       if (window.WebViewJavascriptBridge) {
-        return callback(WebViewJavascriptBridge);
+        return callback(WebViewJavascriptBridge)
       } else {
         document.addEventListener('WebViewJavascriptBridgeReady',
         function() {
           callback(WebViewJavascriptBridge)
         },
-        false);
+        false)
       }
       if (window.WVJBCallbacks) {
-        return window.WVJBCallbacks.push(callback);
+        return window.WVJBCallbacks.push(callback)
       }
-      window.WVJBCallbacks = [callback];
-      var WVJBIframe = document.createElement('iframe');
-      WVJBIframe.style.display = 'none';
-      WVJBIframe.src = 'https: //__bridge_loaded__';
-      document.documentElement.appendChild(WVJBIframe);
+      window.WVJBCallbacks = [callback]
+      var WVJBIframe = document.createElement('iframe')
+      WVJBIframe.style.display = 'none'
+      WVJBIframe.src = 'https: //__bridge_loaded__'
+      document.documentElement.appendChild(WVJBIframe)
       setTimeout(function() {
         document.documentElement.removeChild(WVJBIframe)
       },
@@ -52,33 +88,337 @@
     }
 
     window.onload = setupWebViewJavascriptBridge(function(bridge) {
-      window.bridge = bridge;
-    });
+      window.bridge = bridge
+    })
 
-    function openlock(){
-      initBle()
+    window.unonload = function(){
+      alert("close")
+      destroy()
     }
 
-    function initBle(){
+    function openlock(){
+      scanBle()
+    }
+
+    function scanBle(){
       var params = {'function' : 'openBluetoothAdapter'}   
       window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
             //alert(response)
-            let responseObj = JSON.parse(response)
-            if(responseObj.resultCode = 0){
+            let adapterResponseObj = JSON.parse(response)
+            if(adapterResponseObj.resultCode == 0){
               var params = {'function' : 'getBluetoothAdapterState'}
               window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
-                  alert(response)
+                  //alert(response)
+                  let adapterStateResponseObj = JSON.parse(response)
+                  if(adapterStateResponseObj.resultCode == 0 && adapterStateResponseObj.data.available == true && adapterStateResponseObj.data.discovering == false){
+                    isDestroy = false
+                    var params = {'function' : 'startBluetoothDevicesDiscovery', 'services':'0000180A-0000-1000-8000-00805F9B34FB'} 
+                    window.bridge.callHandler('bluetoothDevicesOprate',params,function(response) {
+                       
+                        let discoveryResponseObj = JSON.parse(response)
+                        if(discoveryResponseObj.resultCode == 0){
+                           isScanning = true
+                             window.bridge.registerHandler("onBluetoothDeviceFound",
+                                    function(responseData, responseCallback) {
+
+                                      //alert(responseData)
+
+                                      let foundDeviceResponseObj = JSON.parse(responseData)
+                                      let advertisData = foundDeviceResponseObj.advertisData
+                                      let cmei = advertisData.substr(4, advertisData.length - 5)
+                                      let deviceId = foundDeviceResponseObj.deviceId
+                                      if(cmei == sourceCMEI){
+                                        stopDiscoveryBle()
+                                        var params = {'function':'createBLEConnection','deviceId':deviceId}
+                                        window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
+                                            //alert(response)
+                                            let connectResponseObj = JSON.parse(response)
+                                            if(connectResponseObj.resultCode == 0){
+                                              isConnected = true
+                                              currentConnectDeviceId = deviceId
+                                              setTimeout(()=>{
+                                                //alert(deviceId)
+                                                var params = {'function':'getBLEDeviceServices','deviceId':deviceId}
+                                                window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
+
+                                                  //alert(response)
+
+                                                  let foundAllServiceResponseObj = JSON.parse(response)
+
+                                                  if(foundAllServiceResponseObj.resultCode == 0){
+
+                                                    let serviceSize = foundAllServiceResponseObj.services.length
+
+                                                    serviceId = foundAllServiceResponseObj.services[serviceSize-1].service.uuid
+
+                                                    //alert(serviceId)
+
+                                                    var params = {'function' : 'getBLEDeviceCharacteristics','deviceId':deviceId,'serviceId':serviceId} 
+                                                    window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
+                                                        //alert(response)
+
+                                                        let foundAllCharacteristicsResponseObj = JSON.parse(response)
+
+                                                        if(foundAllCharacteristicsResponseObj.resultCode == 0){
+
+                                                          let characteristicsList = foundAllCharacteristicsResponseObj.characteristics
+
+                                                          notifyCharacteristic = '15005991-B131-3396-014C-664C9867B917'
+                                                          writeCharacteristic = '6EB675AB-8BD1-1B9A-7444-621E52EC6823'
+
+                                                          var params = {'function':'notifyBLECharacteristicValueChange','deviceId':deviceId,'serviceId':serviceId,'characteristicId':notifyCharacteristic,'state':true}
+                                                          window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
+                                                            //alert(response)
+                                                            let notifyCharacteristicsResponseObj = JSON.parse(response)
+                                                            if(notifyCharacteristicsResponseObj.resultCode == 0){
+                                                              window.bridge.registerHandler('onBLECharacteristicValueChange',
+                                                                function(responseData, responseCallback) {
+                                                                  //alert(responseData)
+
+                                                                  let notifyCharacteristicsValueResponseObj = JSON.parse(responseData)
+
+                                                                  if(notifyCharacteristicsValueResponseObj.characteristicId == notifyCharacteristic){
+
+                                                                    let value = notifyCharacteristicsValueResponseObj.value.substr(8)
+
+                                                                    getOpenKey(value)
+                                                                  }
+                                                                })
+
+                                                              if(openByServer == 'true'){
+                                                                writeDataToLock('8003040100')
+                                                              }else{
+                                                                alert("直接开锁")
+                                                                writeDataToLock('80030f0000')
+                                                                setTimeout(()=>{
+                                                                  destroy()
+                                                                },1500)
+                                                              }
+                                                              window.bridge.registerHandler("onBLEConnectionStateChange",
+                                                                  function(responseData, responseCallback) {
+                                                                     let connectStateResponseObj = JSON.parse(responseData)
+                                                                     if(!connectStateResponseObj.connected){
+                                                                        //alert("蓝牙已断开")
+                                                                        destroy()
+                                                                     }
+                                                              })
+                                                            }
+                                                          })
+                                                        }
+
+                                                      })
+                                                  }
+                                                })
+                                              },2500)
+                                            }
+                                        })
+                                      }
+                                   }
+                          )
+                        }
+                    })
+                  }
               })
-            }
+           }
+      })
+    }
+
+
+    function writeDataToLock(data) {
+      var params = {'function':'writeBLECharacteristicValue','deviceId':currentConnectDeviceId,'serviceId':serviceId,'characteristicId':writeCharacteristic,'value':data}
+      window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
+           //alert(response)
+      })
+    }
+
+    function stopDiscoveryBle() {
+      var params = {'function' : 'stopBluetoothDevicesDiscovery'}
+      window.bridge.callHandler('bluetoothDevicesOprate',params,function(response) {
+            //alert(response)
+         isScanning = false
+      })
+    }
+
+    function disconnect(){
+      var params = {'function' : 'closeBLEConnection' , 'deviceId':currentConnectDeviceId}
+      WebViewJavascriptBridge.callHandler('bluetoothBLEOprate',params,function(response) {
+          //alert(response)
+        isConnected = false
       })
     }
 
     function closeBle(){
-      var params = {'function': 'closeBluetoothAdapter'};   
+      var params = {'function': 'closeBluetoothAdapter'} 
       window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
-                  alert(response)
+            //alert(response)
+        isDestroy = true
       })
     }
 
+    function destroy() {
+    if (isScanning) {
+        stopDiscoveryBle()
+    }
+    if (isConnected) {
+        disconnect()
+    }
+    if (!isDestroy) {
+        setTimeout(() =>{
+            if (!isDestroy) {
+                closeBle()
+            }
+        },
+        1000)
+      }
+    }
 
+
+
+    function getOpenKey(content){
+      //alert(content)
+      let nonce = random(false, 10)
+      //alert(nonce)
+      let timestamp = formatTime(new Date())
+      //alert(timestamp)
+
+      var sign = "content=" + content + "&imei=" + sourceCMEI + "&nonce=" + nonce + "&timestamp=" + timestamp + "&key=35e1a22905087a0184190ea5a05659b7"
+      var signSha1 = sha1(sign).toLocaleUpperCase();
+      //alert(signSha1)
+      var dict = {
+        "sign": signSha1,
+        "imei": sourceCMEI,
+        "nonce": nonce,
+        "content": content,
+        "timestamp": timestamp,
+      }
+
+      //alert(dict)
+
+       $.ajax({
+            //请求方式
+            type:"POST",
+            headers:{'token': 'eyJleHAiOjE1MTEzMzU4NTMxMzMsInBheWxvYWQiOiJ7XCJ1c2VySWRcIjo2MDcsXCJwYXNzd29yZFwiOlwiWWtacWIwaFpObWxZTTFoSVIwOTBZV0o1YTJWdFp6MDlcIixcInVzZXJOYW1lXCI6XCIxMzU2MDcyMzYwM1wiLFwiY3VycmVudFRpbWVNaWxsaXNcIjpudWxsfSJ9','content-type': 'application/x-www-form-urlencoded'},
+            //请求地址
+            url:'https://nbiot.vooct.com/api/getPassString',
+            async:true,
+            dataType:'text',
+            //数据，json字符串
+            data:dict,
+            //请求成功
+            success : function(result) {
+              let code = result.data.code
+              if (code == 0){
+                var message = result.data.message
+                //alert(message)
+                //有效数据的长度
+                var length = message.length / 2
+                var data = "05" + length + message
+                //要开锁的完整数据
+               var openData = "80" + data.length / 2 + data
+               writeDataToLock(openData)
+               setTimeout(()=>{
+                  destroy()
+               },1500)
+              }
+            },
+            error : function(e){
+                alert(JSON.stringify(e))
+            }
+        });
+
+    }
+
+    function random(randomFlag, min, max) {
+      let str = '',
+      range = min,
+      arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+      if (randomFlag) {
+          range = Math.round(Math.random() * (max - min)) + min
+      }
+      for (let i = 0; i < range; i++) {
+        let index = Math.round(Math.random() * (arr.length - 1));
+        str += arr[index]
+      }
+      return str
+    }
+
+    function formatTime(date){
+     let year = date.getFullYear()
+     let month = date.getMonth() + 1 
+     let day = date.getDate() 
+     let hour = date.getHours() 
+     let minute = date.getMinutes()
+     let second = date.getSeconds() 
+     return [year, month, day].map(formatNumber).join('-') + ' ' + [hour, minute, second].map(formatNumber).join(':')
+    }
+
+    function formatNumber(n) {
+      n = n.toString()
+      return n[1] ? n : '0' + n
+    }
+
+    function encodeUTF8(s) {
+      var i, r = [],
+      c,
+      x;
+      for (i = 0; i < s.length; i++) if ((c = s.charCodeAt(i)) < 0x80) r.push(c)
+      else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F))
+      else {
+        if ((x = c ^ 0xD800) >> 10 == 0) //对四字节UTF-16转换为Unicode
+        c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
+        r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F))
+        else r.push(0xE0 + (c >> 12 & 0xF));
+        r.push(0x80 + (c >> 6 & 0x3F), 0x80 + (c & 0x3F))
+      }
+      return r
+    }
+
+    function sha1(s) {
+    var data = new Uint8Array(encodeUTF8(s));
+    var i, j, t;
+    var l = ((data.length + 8) >>> 6 << 4) + 16,
+    s = new Uint8Array(l << 2);
+    s.set(new Uint8Array(data.buffer)),
+    s = new Uint32Array(s.buffer);
+    for (t = new DataView(s.buffer), i = 0; i < l; i++) s[i] = t.getUint32(i << 2);
+    s[data.length >> 2] |= 0x80 << (24 - (data.length & 3) * 8);
+    s[l - 1] = data.length << 3;
+    var w = [],
+    f = [function() {
+        return m[1] & m[2] | ~m[1] & m[3];
+    },
+    function() {
+        return m[1] ^ m[2] ^ m[3];
+    },
+    function() {
+        return m[1] & m[2] | m[1] & m[3] | m[2] & m[3];
+    },
+    function() {
+        return m[1] ^ m[2] ^ m[3];
+    }],
+    rol = function(n, c) {
+        return n << c | n >>> (32 - c);
+    },
+    k = [1518500249, 1859775393, -1894007588, -899497514],
+    m = [1732584193, -271733879, null, null, -1009589776];
+    m[2] = ~m[0],
+    m[3] = ~m[1];
+    for (i = 0; i < s.length; i += 16) {
+        var o = m.slice(0);
+        for (j = 0; j < 80; j++) w[j] = j < 16 ? s[i + j] : rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1),
+        t = rol(m[0], 5) + f[j / 20 | 0]() + m[4] + w[j] + k[j / 20 | 0] | 0,
+        m[1] = rol(m[1], 30),
+        m.pop(),
+        m.unshift(t);
+        for (j = 0; j < 5; j++) m[j] = m[j] + o[j] | 0;
+    };
+    t = new DataView(new Uint32Array(m).buffer);
+    for (var i = 0; i < 5; i++) m[i] = t.getUint32(i << 2);
+
+    var hex = Array.prototype.map.call(new Uint8Array(new Uint32Array(m).buffer),
+    function(e) {
+        return (e < 16 ? "0": "") + e.toString(16);
+    }).join("");
+    return hex;
+  }
   </script>
