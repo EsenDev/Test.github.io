@@ -3,6 +3,20 @@
 
   <body>
 
+
+      <button onclick="javascript:location.reload();">
+      刷新
+      </button>
+
+      <br>
+
+      <br>
+
+      <br>
+
+      <br>
+
+
       <button onclick="openlock()">
       开锁
       </button>
@@ -41,14 +55,28 @@
     });
 
     function openlock(){
-
       initBle()
     }
 
     function initBle(){
       var params = {'function' : 'openBluetoothAdapter'}   
       window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
-            alert(response)
-       })
-     }
+            //alert(response)
+            if(response.resultCode = 0){
+              var params = {'function' : 'getBluetoothAdapterState'}
+              window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
+                  alert(response)
+              })
+            }
+      })
+    }
+
+    function closeBle(){
+      var params = {'function': 'closeBluetoothAdapter'};   
+      window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
+                  alert(response)
+      })
+    }
+
+
   </script>
