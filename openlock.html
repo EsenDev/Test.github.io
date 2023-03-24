@@ -221,10 +221,10 @@
                                                                 writeDataToLock('8003040100')
                                                               }else{
                                                                 writeDataToLock('80030f0000')
-                                                                $("#title").html("开锁指令已下发,等待开锁")
+                                                                close()
+                                                                alert("开锁指令已下发,等待开锁")
                                                                 setTimeout(()=>{
                                                                   destroy()
-                                                                  close()
                                                                 },1500)
                                                               }
                                                               window.bridge.registerHandler("onBLEConnectionStateChange",
@@ -479,16 +479,14 @@
     return hex;
   }
 
-
-
-      function show(){
-        var show = $(".dialog").css("display");
-        $(".dialog").css("display",show =="none"?"block":"none");
-      }
-      function close(){
-        var show = $(".dialog").css("display");
-        $(".dialog").css("display",show =="none"?"block":"none");
-      }
+  function show(){
+    var show = $(".dialog").css("display")
+    $(".dialog").css("display",show ="block")
+  }
+  function close(){
+    var show = $(".dialog").css("display")
+    $(".dialog").css("display",show ="none")
+  }
 
   </script>
 
