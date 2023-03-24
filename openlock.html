@@ -3,10 +3,9 @@
   <head>
     <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
   </head>
-  <body>
+  <body style="width:100%;display: flex;flex-direction: column;justify-content:center; align-items: center; align-content: center;">
 
-
-      <button onclick="javascript:location.reload();">
+      <button onclick="reload()" style="width: 100px;height: 100px; margin-top: 100px;">
         刷新页面
       </button>
 
@@ -14,18 +13,37 @@
 
       <br>
 
-      <button onclick="destroy()">
-      关闭蓝牙
-      </button>
-
       <br>
 
       <br>
 
-
-      <button onclick="openlock()">
+      <button onclick="openlock()" style="width: 100px;height: 100px;">
       开锁
       </button>
+
+
+      <div>
+      <!-- 弹窗遮罩层 -->
+      <div class="dialog">
+        <!-- 弹窗内容 -->
+        <div class="content">
+        <div class="aclose">
+          <span id="title">开锁中</span>
+        </div>
+        <div class="contain">
+          <div class="loading">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        </div>
+        </div>
+      
+      </div>
+      
+    </div>
 
   </body>
 
@@ -63,6 +81,8 @@
    
    let isScanning
 
+   let scanningTimeoutId
+
    function setupWebViewJavascriptBridge(callback) {
       if (window.WebViewJavascriptBridge) {
         return callback(WebViewJavascriptBridge)
@@ -91,12 +111,25 @@
       window.bridge = bridge
     })
 
+    function reload(){
+      destroy()
+      setTimeout(()=>{
+        location.reload()
+      },1000)
+    }
+
     window.unonload = function(){
-      alert("close")
       destroy()
     }
 
     function openlock(){
+      $("#title").html("开锁中...")
+      show()
+      scanningTimeoutId = setTimeout(()=>{
+        destroy()
+        close()
+        alert("未搜索到指定锁，请稍后重试")
+      },5000)
       scanBle()
     }
 
@@ -114,7 +147,6 @@
                     isDestroy = false
                     var params = {'function' : 'startBluetoothDevicesDiscovery', 'services':'0000180A-0000-1000-8000-00805F9B34FB'} 
                     window.bridge.callHandler('bluetoothDevicesOprate',params,function(response) {
-                       
                         let discoveryResponseObj = JSON.parse(response)
                         if(discoveryResponseObj.resultCode == 0){
                            isScanning = true
@@ -128,6 +160,7 @@
                                       let cmei = advertisData.substr(4, advertisData.length - 5)
                                       let deviceId = foundDeviceResponseObj.deviceId
                                       if(cmei == sourceCMEI){
+                                        clearTimeout(scanningTimeoutId)
                                         stopDiscoveryBle()
                                         var params = {'function':'createBLEConnection','deviceId':deviceId}
                                         window.bridge.callHandler('bluetoothBLEOprate',params,function(response) {
@@ -184,14 +217,14 @@
                                                                     getOpenKey(value)
                                                                   }
                                                                 })
-
                                                               if(openByServer == 'true'){
                                                                 writeDataToLock('8003040100')
                                                               }else{
-                                                                alert("直接开锁")
                                                                 writeDataToLock('80030f0000')
+                                                                $("#title").html("开锁指令已下发,等待开锁")
                                                                 setTimeout(()=>{
                                                                   destroy()
+                                                                  close()
                                                                 },1500)
                                                               }
                                                               window.bridge.registerHandler("onBLEConnectionStateChange",
@@ -200,26 +233,48 @@
                                                                      if(!connectStateResponseObj.connected){
                                                                         //alert("蓝牙已断开")
                                                                         destroy()
+                                                                        close()
                                                                      }
                                                               })
+                                                            }else{
+                                                              close()
+                                                              alert(response)
                                                             }
                                                           })
+                                                        }else{
+                                                          close()
+                                                          alert(response)
                                                         }
-
                                                       })
+                                                  }else{
+                                                    close()
+                                                    alert(response)
                                                   }
                                                 })
                                               },2500)
+                                            }else{
+                                              close()
+                                              alert(response)
                                             }
                                         })
                                       }
                                    }
                           )
+                        }else{
+                          close()
+                          alert(response)
                         }
                     })
+                  }else{
+                    close()
+                    alert(response)
                   }
               })
-           }
+           
+           }else{
+            close()
+            alert(response)
+          }
       })
     }
 
@@ -273,7 +328,6 @@
     }
 
 
-
     function getOpenKey(content){
       //alert(content)
       let nonce = random(false, 10)
@@ -316,12 +370,15 @@
                 //要开锁的完整数据
                var openData = "80" + data.length / 2 + data
                writeDataToLock(openData)
+               $("#title").html("开锁指令已下发,等待开锁")
                setTimeout(()=>{
                   destroy()
+                  close()
                },1500)
               }
             },
             error : function(e){
+                close()
                 alert(JSON.stringify(e))
             }
         });
@@ -421,4 +478,123 @@
     }).join("");
     return hex;
   }
+
+
+
+      function show(){
+        var show = $(".dialog").css("display");
+        $(".dialog").css("display",show =="none"?"block":"none");
+      }
+      function close(){
+        var show = $(".dialog").css("display");
+        $(".dialog").css("display",show =="none"?"block":"none");
+      }
+
   </script>
+
+  <style type="text/css">
+  * {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .loading{
+    height: 40px;
+    margin: 100px auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  .loading span{
+    width: 8px;
+    height: 100%;
+    border-radius: 4px;
+    background-color: lightgreen;
+    animation: load 1s ease infinite;
+    margin: 0 2px;
+  }
+  @keyframes load{
+    0%,
+    100% {
+      transform: scaleY(1.5);
+      background-color: lightgreen;
+    }
+    50% {
+      transform: scaleY(1);
+      background-color: lightblue;
+    }
+  }
+  
+  .loading span:nth-child(2){
+    animation-delay: 0.2s;
+  }
+  .loading span:nth-child(3){
+    animation-delay: 0.4s;
+  }
+  .loading span:nth-child(4){
+    animation-delay: 0.6s;
+  }
+  .loading span:nth-child(5){
+    animation-delay: 0.8s;
+  }
+
+  .btn {
+  width: 200px;
+  height: 50px;
+  font-size: 20px;
+  color: white;
+  background-color: #006DCC;
+  border: 0px;
+  border-radius: 10px
+}
+.btn:hover {
+  box-shadow: 0 0 5px 5px darkgray;
+}
+
+.dialog {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.content {
+  width: 500px;
+  height: 300px;
+  margin: 100px auto;
+  background-color: #fefefe;
+  border-radius: 10px;
+  box-shadow: 0 0 5px 5px darkgray;
+}
+.aclose{
+  width: 500px;
+  height: 60px;
+  text-align: center;
+}
+.aclose span{
+  line-height: 70px;
+  font-size: 26px;
+  font-weight: 700;
+}
+.contain{
+  width: 500px;
+  height: 230px;
+  font-size: 20px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  margin-right: 15px;
+  font-size: 40px;
+  font-weight: bold;
+  text-decoration: none;
+}
+ 
+</style>
