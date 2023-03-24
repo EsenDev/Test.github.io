@@ -6,7 +6,7 @@
   <body style="width:100%;display: flex;flex-direction: column;justify-content:center; align-items: center; align-content: center;">
 
     <!--   <button onclick="reload()" style="width: 300px;height: 200px; margin-top: 100px;font-size:50px">
-        Ë¢ÐÂÒ³Ãæ
+        åˆ·æ–°é¡µé¢
       </button> -->
       <p>version: v1.0</p>
       <br>
@@ -18,17 +18,17 @@
       <br>
 
       <button onclick="openlock()" style="width: 300px;height: 200px; font-size:50px">
-      ¿ªËø
+      å¼€é”
       </button>
 
 
       <div>
-      <!-- µ¯´°ÕÚÕÖ²ã -->
+      <!-- å¼¹çª—é®ç½©å±‚ -->
       <div class="dialog">
-        <!-- µ¯´°ÄÚÈÝ -->
+        <!-- å¼¹çª—å†…å®¹ -->
         <div class="content">
         <div class="aclose">
-          <span id="title">¿ªËøÖÐ</span>
+          <span id="title">å¼€é”ä¸­</span>
         </div>
         <div class="contain">
           <div class="loading">
@@ -127,12 +127,12 @@
     }
 
     function openlock(){
-      $("#title").html("¿ªËøÖÐ...")
+      $("#title").html("å¼€é”ä¸­...")
       show()
       scanningTimeoutId = setTimeout(()=>{
         destroy()
         close()
-        alert("Î´ËÑË÷µ½Ö¸¶¨Ëø£¬ÇëÉÔºóÖØÊÔ")
+        alert("æœªæœç´¢åˆ°æŒ‡å®šé”ï¼Œè¯·ç¨åŽé‡è¯•")
       },5000)
       scanBle()
     }
@@ -226,7 +226,7 @@
                                                               }else{
                                                                 writeDataToLock('80030f0000')
                                                                 close()
-                                                                alert("¿ªËøÖ¸ÁîÒÑÏÂ·¢,µÈ´ý¿ªËø")
+                                                                alert("å¼€é”æŒ‡ä»¤å·²ä¸‹å‘,ç­‰å¾…å¼€é”")
                                                                 setTimeout(()=>{
                                                                   destroy()
                                                                 },1500)
@@ -235,7 +235,7 @@
                                                                   function(responseData, responseCallback) {
                                                                      let connectStateResponseObj = JSON.parse(responseData)
                                                                      if(!connectStateResponseObj.connected){
-                                                                        //alert("À¶ÑÀÒÑ¶Ï¿ª")
+                                                                        //alert("è“ç‰™å·²æ–­å¼€")
                                                                         destroy()
                                                                         close()
                                                                      }
@@ -353,28 +353,28 @@
       //alert(dict)
 
        $.ajax({
-            //ÇëÇó·½Ê½
+            //è¯·æ±‚æ–¹å¼
             type:"POST",
             headers:{'token': 'eyJleHAiOjE1MTEzMzU4NTMxMzMsInBheWxvYWQiOiJ7XCJ1c2VySWRcIjo2MDcsXCJwYXNzd29yZFwiOlwiWWtacWIwaFpObWxZTTFoSVIwOTBZV0o1YTJWdFp6MDlcIixcInVzZXJOYW1lXCI6XCIxMzU2MDcyMzYwM1wiLFwiY3VycmVudFRpbWVNaWxsaXNcIjpudWxsfSJ9','content-type': 'application/x-www-form-urlencoded'},
-            //ÇëÇóµØÖ·
+            //è¯·æ±‚åœ°å€
             url:'https://nbiot.vooct.com/api/getPassString',
             async:true,
             dataType:'text',
-            //Êý¾Ý£¬json×Ö·û´®
+            //æ•°æ®ï¼Œjsonå­—ç¬¦ä¸²
             data:dict,
-            //ÇëÇó³É¹¦
+            //è¯·æ±‚æˆåŠŸ
             success : function(result) {
               let code = result.data.code
               if (code == 0){
                 var message = result.data.message
                 //alert(message)
-                //ÓÐÐ§Êý¾ÝµÄ³¤¶È
+                //æœ‰æ•ˆæ•°æ®çš„é•¿åº¦
                 var length = message.length / 2
                 var data = "05" + length + message
-                //Òª¿ªËøµÄÍêÕûÊý¾Ý
+                //è¦å¼€é”çš„å®Œæ•´æ•°æ®
                var openData = "80" + data.length / 2 + data
                writeDataToLock(openData)
-               $("#title").html("¿ªËøÖ¸ÁîÒÑÏÂ·¢,µÈ´ý¿ªËø")
+               $("#title").html("å¼€é”æŒ‡ä»¤å·²ä¸‹å‘,ç­‰å¾…å¼€é”")
                setTimeout(()=>{
                   destroy()
                   close()
@@ -425,7 +425,7 @@
       for (i = 0; i < s.length; i++) if ((c = s.charCodeAt(i)) < 0x80) r.push(c)
       else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F))
       else {
-        if ((x = c ^ 0xD800) >> 10 == 0) //¶ÔËÄ×Ö½ÚUTF-16×ª»»ÎªUnicode
+        if ((x = c ^ 0xD800) >> 10 == 0) //å¯¹å››å­—èŠ‚UTF-16è½¬æ¢ä¸ºUnicode
         c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
         r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F))
         else r.push(0xE0 + (c >> 12 & 0xF));
