@@ -6,7 +6,7 @@
   <body style="width:100%;display: flex;flex-direction: column;justify-content:center; align-items: center; align-content: center;">
 
     <!--   <button onclick="reload()" style="width: 300px;height: 200px; margin-top: 100px;font-size:50px">
-        åˆ·æ–°é¡µé¢
+        Ë¢ÐÂÒ³Ãæ
       </button> -->
 
       <br>
@@ -18,17 +18,17 @@
       <br>
 
       <button onclick="openlock()" style="width: 300px;height: 200px; font-size:50px">
-      å¼€é”
+      ¿ªËø
       </button>
 
 
       <div>
-      <!-- å¼¹çª—é®ç½©å±‚ -->
+      <!-- µ¯´°ÕÚÕÖ²ã -->
       <div class="dialog">
-        <!-- å¼¹çª—å†…å®¹ -->
+        <!-- µ¯´°ÄÚÈÝ -->
         <div class="content">
         <div class="aclose">
-          <span id="title">å¼€é”ä¸­</span>
+          <span id="title">¿ªËøÖÐ</span>
         </div>
         <div class="contain">
           <div class="loading">
@@ -86,7 +86,8 @@
    function setupWebViewJavascriptBridge(callback) {
       if (window.WebViewJavascriptBridge) {
         return callback(WebViewJavascriptBridge)
-      } else {
+      } 
+      else {
         document.addEventListener('WebViewJavascriptBridgeReady',
         function() {
           callback(WebViewJavascriptBridge)
@@ -99,16 +100,19 @@
       window.WVJBCallbacks = [callback]
       var WVJBIframe = document.createElement('iframe')
       WVJBIframe.style.display = 'none'
-      WVJBIframe.src = 'https: //__bridge_loaded__'
+      WVJBIframe.src = 'https://__bridge_loaded__'
       document.documentElement.appendChild(WVJBIframe)
       setTimeout(function() {
         document.documentElement.removeChild(WVJBIframe)
       },
       0)
+
+      //window.setupWebViewJavascriptBridge = setupWebViewJavascriptBridge
     }
 
     window.onload = setupWebViewJavascriptBridge(function(bridge) {
       window.bridge = bridge
+      //alert("setupWebViewJavascriptBridge")
     })
 
     function reload(){
@@ -123,18 +127,18 @@
     }
 
     function openlock(){
-      $("#title").html("å¼€é”ä¸­...")
+      $("#title").html("¿ªËøÖÐ...")
       show()
       scanningTimeoutId = setTimeout(()=>{
         destroy()
         close()
-        alert("æœªæœç´¢åˆ°æŒ‡å®šé”ï¼Œè¯·ç¨åŽé‡è¯•")
+        alert("Î´ËÑË÷µ½Ö¸¶¨Ëø£¬ÇëÉÔºóÖØÊÔ")
       },5000)
       scanBle()
     }
 
     function scanBle(){
-      var params = {'function' : 'openBluetoothAdapter'}   
+      var params = {'function' : 'openBluetoothAdapter'}
       window.bridge.callHandler('bluetoothAdapterOprate', params,function(response) {
             //alert(response)
             let adapterResponseObj = JSON.parse(response)
@@ -153,7 +157,7 @@
                              window.bridge.registerHandler("onBluetoothDeviceFound",
                                     function(responseData, responseCallback) {
 
-                                      //alert(responseData)
+                                      alert(responseData)
 
                                       let foundDeviceResponseObj = JSON.parse(responseData)
                                       let advertisData = foundDeviceResponseObj.advertisData
@@ -222,7 +226,7 @@
                                                               }else{
                                                                 writeDataToLock('80030f0000')
                                                                 close()
-                                                                alert("å¼€é”æŒ‡ä»¤å·²ä¸‹å‘,ç­‰å¾…å¼€é”")
+                                                                alert("¿ªËøÖ¸ÁîÒÑÏÂ·¢,µÈ´ý¿ªËø")
                                                                 setTimeout(()=>{
                                                                   destroy()
                                                                 },1500)
@@ -231,7 +235,7 @@
                                                                   function(responseData, responseCallback) {
                                                                      let connectStateResponseObj = JSON.parse(responseData)
                                                                      if(!connectStateResponseObj.connected){
-                                                                        //alert("è“ç‰™å·²æ–­å¼€")
+                                                                        //alert("À¶ÑÀÒÑ¶Ï¿ª")
                                                                         destroy()
                                                                         close()
                                                                      }
@@ -349,28 +353,28 @@
       //alert(dict)
 
        $.ajax({
-            //è¯·æ±‚æ–¹å¼
+            //ÇëÇó·½Ê½
             type:"POST",
             headers:{'token': 'eyJleHAiOjE1MTEzMzU4NTMxMzMsInBheWxvYWQiOiJ7XCJ1c2VySWRcIjo2MDcsXCJwYXNzd29yZFwiOlwiWWtacWIwaFpObWxZTTFoSVIwOTBZV0o1YTJWdFp6MDlcIixcInVzZXJOYW1lXCI6XCIxMzU2MDcyMzYwM1wiLFwiY3VycmVudFRpbWVNaWxsaXNcIjpudWxsfSJ9','content-type': 'application/x-www-form-urlencoded'},
-            //è¯·æ±‚åœ°å€
+            //ÇëÇóµØÖ·
             url:'https://nbiot.vooct.com/api/getPassString',
             async:true,
             dataType:'text',
-            //æ•°æ®ï¼Œjsonå­—ç¬¦ä¸²
+            //Êý¾Ý£¬json×Ö·û´®
             data:dict,
-            //è¯·æ±‚æˆåŠŸ
+            //ÇëÇó³É¹¦
             success : function(result) {
               let code = result.data.code
               if (code == 0){
                 var message = result.data.message
                 //alert(message)
-                //æœ‰æ•ˆæ•°æ®çš„é•¿åº¦
+                //ÓÐÐ§Êý¾ÝµÄ³¤¶È
                 var length = message.length / 2
                 var data = "05" + length + message
-                //è¦å¼€é”çš„å®Œæ•´æ•°æ®
+                //Òª¿ªËøµÄÍêÕûÊý¾Ý
                var openData = "80" + data.length / 2 + data
                writeDataToLock(openData)
-               $("#title").html("å¼€é”æŒ‡ä»¤å·²ä¸‹å‘,ç­‰å¾…å¼€é”")
+               $("#title").html("¿ªËøÖ¸ÁîÒÑÏÂ·¢,µÈ´ý¿ªËø")
                setTimeout(()=>{
                   destroy()
                   close()
@@ -421,7 +425,7 @@
       for (i = 0; i < s.length; i++) if ((c = s.charCodeAt(i)) < 0x80) r.push(c)
       else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F))
       else {
-        if ((x = c ^ 0xD800) >> 10 == 0) //å¯¹å››å­—èŠ‚UTF-16è½¬æ¢ä¸ºUnicode
+        if ((x = c ^ 0xD800) >> 10 == 0) //¶ÔËÄ×Ö½ÚUTF-16×ª»»ÎªUnicode
         c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
         r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F))
         else r.push(0xE0 + (c >> 12 & 0xF));
